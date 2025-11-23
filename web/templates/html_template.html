@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Server Manager</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 Minecraft Server Manager</h1>
+            <div class="status-bar">
+                <span class="status-label">Status:</span>
+                <span id="server-status" class="status-badge status-stopped">Stopped</span>
+            </div>
+        </header>
+
+        <div class="controls">
+            <button id="start-btn" class="btn btn-success" onclick="startServer()">▶ Start</button>
+            <button id="stop-btn" class="btn btn-danger" onclick="stopServer()">⬛ Stop</button>
+            <button id="restart-btn" class="btn btn-warning" onclick="restartServer()">🔄 Restart</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('console')">Console</button>
+            <button class="tab-btn" onclick="switchTab('files')">Server Files</button>
+            <button class="tab-btn" onclick="switchTab('worlds')">Worlds</button>
+            <button class="tab-btn" onclick="switchTab('config')">Configuration</button>
+        </div>
+
+        <div id="console-tab" class="tab-content active">
+            <div class="console-container">
+                <div id="console-output" class="console-output"></div>
+            </div>
+            <div class="console-input">
+                <input type="text" id="command-input" placeholder="Enter command..." onkeypress="handleCommandKey(event)">
+                <button class="btn btn-primary" onclick="sendCommand()">Send</button>
+            </div>
+        </div>
+
+        <div id="files-tab" class="tab-content">
+            <div class="card">
+                <h2>📦 Upload Server JAR</h2>
+                <p>Upload a Minecraft server JAR file (e.g., server.jar, paper.jar, spigot.jar)</p>
+                <input type="file" id="jar-file" accept=".jar">
+                <button class="btn btn-primary" onclick="uploadJar()">Upload JAR</button>
+                <div id="jar-status" class="upload-status"></div>
+            </div>
+        </div>
+
+        <div id="worlds-tab" class="tab-content">
+            <div class="card">
+                <h2>🗺️ Upload World</h2>
+                <p>Upload a zipped world folder</p>
+                <input type="file" id="world-file" accept=".zip">
+                <button class="btn btn-primary" onclick="uploadWorld()">Upload World</button>
+                <div id="world-status" class="upload-status"></div>
+            </div>
+
+            <div class="card">
+                <h2>Available Worlds</h2>
+                <div id="worlds-list"></div>
+            </div>
+        </div>
+
+        <div id="config-tab" class="tab-content">
+            <div class="card">
+                <h2>⚙️ Server Properties</h2>
+                <textarea id="properties-editor" rows="20"></textarea>
+                <button class="btn btn-success" onclick="saveProperties()">Save Properties</button>
+                <div id="properties-status" class="upload-status"></div>
+            </div>
+        </div>
+
+        <div id="notification" class="notification"></div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
