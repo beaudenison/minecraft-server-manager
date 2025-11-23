@@ -18,9 +18,18 @@ COPY web/ /app/
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create startup script
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+# Create startup script directly in Dockerfile
+RUN echo '#!/bin/bash\n\
+\n\
+# Create necessary directories\n\
+mkdir -p /minecraft/worlds /minecraft/plugins /minecraft/logs\n\
+\n\
+# Start the Flask web application\n\
+cd /app\n\
+python app.py &\n\
+\n\
+# Keep container running\n\
+tail -f /dev/null' > /start.sh && chmod +x /start.sh
 
 # Expose ports
 EXPOSE 25565 8080
