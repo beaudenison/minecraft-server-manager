@@ -9,50 +9,56 @@
 <body>
     <div class="container">
         <header>
-            <h1>🎮 Minecraft Server Manager</h1>
-            <div class="status-bar">
-                <span class="status-label">Status:</span>
-                <span id="server-status" class="status-badge status-stopped">Stopped</span>
+            <div class="header-left">
+                <h1>🎮 Minecraft Server Manager</h1>
+            </div>
+            <div class="header-right">
+                <div class="status-bar">
+                    <span class="status-label">Status:</span>
+                    <span id="server-status" class="status-badge status-stopped">Stopped</span>
+                </div>
+                <button class="logout-btn" onclick="logout()">Logout</button>
             </div>
         </header>
 
         <div class="controls">
-            <button id="start-btn" class="btn btn-success" onclick="startServer()">▶ Start</button>
-            <button id="stop-btn" class="btn btn-danger" onclick="stopServer()">⬛ Stop</button>
+            <button id="start-btn" class="btn btn-success" onclick="startServer()">▶ Start Server</button>
+            <button id="stop-btn" class="btn btn-danger" onclick="stopServer()">⬛ Stop Server</button>
             <button id="restart-btn" class="btn btn-warning" onclick="restartServer()">🔄 Restart</button>
         </div>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('console')">Console</button>
-            <button class="tab-btn" onclick="switchTab('files')">Server Files</button>
-            <button class="tab-btn" onclick="switchTab('worlds')">Worlds</button>
-            <button class="tab-btn" onclick="switchTab('config')">Configuration</button>
+            <button class="tab-btn active" onclick="switchTab('console')">📟 Console</button>
+            <button class="tab-btn" onclick="switchTab('files')">📦 Server Files</button>
+            <button class="tab-btn" onclick="switchTab('worlds')">🗺️ Worlds</button>
+            <button class="tab-btn" onclick="switchTab('config')">⚙️ Configuration</button>
+            <button class="tab-btn" onclick="switchTab('users')">👥 Users</button>
         </div>
 
         <div id="console-tab" class="tab-content active">
             <div class="console-container">
-                <div id="console-output" class="console-output"></div>
+                <div id="console-output" class="console-output">Waiting for server output...</div>
             </div>
             <div class="console-input">
-                <input type="text" id="command-input" placeholder="Enter command..." onkeypress="handleCommandKey(event)">
-                <button class="btn btn-primary" onclick="sendCommand()">Send</button>
+                <input type="text" id="command-input" placeholder="Enter server command..." onkeypress="handleCommandKey(event)">
+                <button class="btn btn-primary" onclick="sendCommand()">Send Command</button>
             </div>
         </div>
 
         <div id="files-tab" class="tab-content">
             <div class="card">
                 <h2>📦 Upload Server JAR</h2>
-                <p>Upload a Minecraft server JAR file (e.g., server.jar, paper.jar, spigot.jar)</p>
+                <p>Upload a Minecraft server JAR file to upgrade versions or change server software (vanilla, Paper, Spigot, etc.)</p>
                 <input type="file" id="jar-file" accept=".jar">
-                <button class="btn btn-primary" onclick="uploadJar()">Upload JAR</button>
+                <button class="btn btn-primary" onclick="uploadJar()">Upload JAR File</button>
                 <div id="jar-status" class="upload-status"></div>
             </div>
         </div>
 
         <div id="worlds-tab" class="tab-content">
             <div class="card">
-                <h2>🗺️ Upload World</h2>
-                <p>Upload a zipped world folder</p>
+                <h2>🗺️ Upload New World</h2>
+                <p>Upload a zipped world folder to migrate your existing world or add a new one</p>
                 <input type="file" id="world-file" accept=".zip">
                 <button class="btn btn-primary" onclick="uploadWorld()">Upload World</button>
                 <div id="world-status" class="upload-status"></div>
@@ -60,16 +66,62 @@
 
             <div class="card">
                 <h2>Available Worlds</h2>
-                <div id="worlds-list"></div>
+                <div id="worlds-list">
+                    <p>Loading worlds...</p>
+                </div>
             </div>
         </div>
 
         <div id="config-tab" class="tab-content">
             <div class="card">
                 <h2>⚙️ Server Properties</h2>
-                <textarea id="properties-editor" rows="20"></textarea>
-                <button class="btn btn-success" onclick="saveProperties()">Save Properties</button>
+                <p>Edit server.properties configuration. Changes require a server restart to take effect.</p>
+                <textarea id="properties-editor" rows="20" placeholder="Loading server properties..."></textarea>
+                <button class="btn btn-success" onclick="saveProperties()">💾 Save Properties</button>
                 <div id="properties-status" class="upload-status"></div>
+            </div>
+        </div>
+
+        <div id="users-tab" class="tab-content">
+            <div class="card">
+                <h2>🔐 Change Your Password</h2>
+                <p>Change the password for user: <strong id="current-username"></strong></p>
+                <div class="input-group">
+                    <label for="current-password">CURRENT PASSWORD</label>
+                    <input type="password" id="current-password" placeholder="Enter current password">
+                </div>
+                <div class="input-group">
+                    <label for="new-password">NEW PASSWORD</label>
+                    <input type="password" id="new-password" placeholder="Enter new password (min 6 characters)">
+                </div>
+                <button class="btn btn-primary" onclick="changePassword()">🔑 Change Password</button>
+                <div id="password-status" class="upload-status"></div>
+            </div>
+
+            <div class="card">
+                <h2>👥 User Management</h2>
+                <p>Add or remove users who can access the server manager</p>
+                
+                <div class="user-add-section">
+                    <h3>Add New User</h3>
+                    <div class="input-group">
+                        <label for="new-username">USERNAME</label>
+                        <input type="text" id="new-username" placeholder="Enter username (min 3 characters)">
+                    </div>
+                    <div class="input-group">
+                        <label for="new-user-password">PASSWORD</label>
+                        <input type="password" id="new-user-password" placeholder="Enter password (min 6 characters)">
+                    </div>
+                    <button class="btn btn-success" onclick="addUser()">➕ Add User</button>
+                    <div id="add-user-status" class="upload-status"></div>
+                </div>
+
+                <div class="users-list-section">
+                    <h3>Existing Users</h3>
+                    <div id="users-list">
+                        <p>Loading users...</p>
+                    </div>
+                </div>
             </div>
         </div>
 

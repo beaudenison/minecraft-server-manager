@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateStatus();
     loadProperties();
     loadWorlds();
+    loadCurrentUsername();
     
     // Update console every 2 seconds when on console tab
     setInterval(() => {
@@ -16,6 +17,42 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update status every 5 seconds
     setInterval(updateStatus, 5000);
 });
+
+async function loadCurrentUsername() {
+    try {
+        const response = await fetch('/api/users');
+        if (await handleApiError(response)) return;
+        const data = await response.json();
+        
+        if (data.success) {
+            const usernameEl = document.getElementById('current-username');
+            if (usernameEl) {
+                usernameEl.textContent = data.current_user;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load username:', error);
+    }
+}
+
+async function logout() {
+    try {
+        const response = await fetch('/logout', { method: 'POST' });
+        if (response.ok) {
+            window.location.href = '/';
+        }
+    } catch (error) {
+        console.error('Logout failed:', error);
+    }
+}
+
+async function handleApiError(response) {
+    if (response.status === 401) {
+        window.location.href = '/';
+        return true;
+    }
+    return false;
+}
 
 function switchTab(tabName) {
     // Hide all tabs
@@ -37,12 +74,16 @@ function switchTab(tabName) {
         loadWorlds();
     } else if (tabName === 'console') {
         updateConsole();
+    } else if (tabName === 'users') {
+        loadUsers();
     }
 }
 
 async function updateStatus() {
     try {
         const response = await fetch('/api/status');
+        if (await handleApiError(response)) return;
+        
         const data = await response.json();
         
         const statusBadge = document.getElementById('server-status');
@@ -331,4 +372,144 @@ function showNotification(message, type) {
     setTimeout(() => {
         notification.style.display = 'none';
     }, 4000);
+}
+
+// User Management Functions
+async function changePassword() {
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const statusDiv = document.getElementById('password-status');
+    
+    if (!currentPassword || !newPassword) {
+        statusDiv.textContent = 'Please fill in all fields';
+        statusDiv.className = 'upload-status error';
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        statusDiv.textContent = 'New password must be at least 6 characters';
+        statusDiv.className = 'upload-status error';
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+        });
+        
+        if (await handleApiError(response)) return;
+        const data = await response.json();
+        
+        statusDiv.textContent = data.message;
+        statusDiv.className = data.success ? 'upload-status success' : 'upload-status error';
+        
+        if (data.success) {
+            document.getElementById('current-password').value = '';
+            document.getElementById('new-password').value = '';
+            showNotification('Password changed successfully', 'success');
+        }
+    } catch (error) {
+        statusDiv.textContent = 'Failed to change password';
+        statusDiv.className = 'upload-status error';
+    }
+}
+
+async function loadUsers() {
+    try {
+        const response = await fetch('/api/users');
+        if (await handleApiError(response)) return;
+        const data = await response.json();
+        
+        if (data.success) {
+            displayUsers(data.users, data.current_user);
+        }
+    } catch (error) {
+        console.error('Failed to load users:', error);
+    }
+}
+
+function displayUsers(users, currentUser) {
+    const usersList = document.getElementById('users-list');
+    
+    if (!users || users.length === 0) {
+        usersList.innerHTML = '<p>No users found</p>';
+        return;
+    }
+    
+    usersList.innerHTML = users.map(username => `
+        <div class="user-item ${username === currentUser ? 'current-user' : ''}">
+            <div class="user-info">
+                <strong>${username}</strong>
+                ${username === currentUser ? '<span class="user-badge">You</span>' : ''}
+            </div>
+            ${username !== currentUser ? `
+                <button class="btn btn-danger" onclick="deleteUser('${username}')">
+                    🗑️ Delete
+                </button>
+            ` : '<span style="color: var(--text-muted); font-size: 0.9em;">Current user</span>'}
+        </div>
+    `).join('');
+}
+
+async function addUser() {
+    const username = document.getElementById('new-username').value.trim();
+    const password = document.getElementById('new-user-password').value;
+    const statusDiv = document.getElementById('add-user-status');
+    
+    if (!username || !password) {
+        statusDiv.textContent = 'Please fill in all fields';
+        statusDiv.className = 'upload-status error';
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/users/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        
+        if (await handleApiError(response)) return;
+        const data = await response.json();
+        
+        statusDiv.textContent = data.message;
+        statusDiv.className = data.success ? 'upload-status success' : 'upload-status error';
+        
+        if (data.success) {
+            document.getElementById('new-username').value = '';
+            document.getElementById('new-user-password').value = '';
+            showNotification(data.message, 'success');
+            loadUsers();
+        }
+    } catch (error) {
+        statusDiv.textContent = 'Failed to add user';
+        statusDiv.className = 'upload-status error';
+    }
+}
+
+async function deleteUser(username) {
+    if (!confirm(`Are you sure you want to delete user "${username}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/users/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+        });
+        
+        if (await handleApiError(response)) return;
+        const data = await response.json();
+        
+        showNotification(data.message, data.success ? 'success' : 'error');
+        
+        if (data.success) {
+            loadUsers();
+        }
+    } catch (error) {
+        showNotification('Failed to delete user', 'error');
+    }
 }
