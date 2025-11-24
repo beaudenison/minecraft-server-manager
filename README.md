@@ -82,7 +82,10 @@ The console tab displays real-time server health metrics:
 3. The world is automatically set as active and will be used on next server start
 4. If the server is running, it will be restarted automatically to use the new world
 
-**Note**: Worlds are extracted directly to `/minecraft/[worldname]`. Your zip file should contain the world data (level.dat, region folder, etc.) at its root level.
+**Note**: The system automatically handles different ZIP structures:
+- If your ZIP contains a single root folder with the world data, it will extract the contents correctly
+- If your ZIP has world files at the root level (level.dat, region/, etc.), it will work as-is
+- The system validates that level.dat exists and will show an error if the world format is invalid
 
 ### Version Upgrades
 1. Download the new server JAR from minecraft.net or your preferred source

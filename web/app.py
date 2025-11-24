@@ -744,19 +744,54 @@ def api_upload_world():
             shutil.move(world_path, backup_path)
             logger.info(f"Backed up existing world to: {backup_path}")
         
-        # Extract zip
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            # Security check: ensure no path traversal
-            for member in zip_ref.namelist():
-                if member.startswith('..') or member.startswith('/'):
-                    os.remove(zip_path)
-                    return jsonify({'success': False, 'message': 'Invalid zip file structure'}), 400
-            zip_ref.extractall(world_path)
+        # Extract zip to temporary location first
+        temp_extract_path = os.path.join(MC_DIR, f'temp_extract_{int(time.time())}')
+        os.makedirs(temp_extract_path, exist_ok=True)
         
-        # Clean up
-        os.remove(zip_path)
+        try:
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                # Security check: ensure no path traversal
+                for member in zip_ref.namelist():
+                    if member.startswith('..') or member.startswith('/'):
+                        os.remove(zip_path)
+                        shutil.rmtree(temp_extract_path)
+                        return jsonify({'success': False, 'message': 'Invalid zip file structure'}), 400
+                zip_ref.extractall(temp_extract_path)
+            
+            # Check if extracted content has a single root directory
+            extracted_items = os.listdir(temp_extract_path)
+            
+            if len(extracted_items) == 1 and os.path.isdir(os.path.join(temp_extract_path, extracted_items[0])):
+                # Single root directory - move its contents to world_path
+                root_dir = os.path.join(temp_extract_path, extracted_items[0])
+                shutil.move(root_dir, world_path)
+                logger.info(f"Extracted world from single root directory: {extracted_items[0]}")
+            else:
+                # Multiple items or files at root - move entire temp directory
+                shutil.move(temp_extract_path, world_path)
+                logger.info(f"Extracted world with multiple root items")
+            
+            # Clean up
+            if os.path.exists(temp_extract_path):
+                shutil.rmtree(temp_extract_path)
+            os.remove(zip_path)
+            
+        except Exception as e:
+            # Clean up on error
+            if os.path.exists(temp_extract_path):
+                shutil.rmtree(temp_extract_path)
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
+            raise
         
         logger.info(f"World '{world_name}' uploaded by {session.get('username')}")
+        
+        # Verify the world has necessary files
+        if not os.path.exists(os.path.join(world_path, 'level.dat')):
+            logger.error(f"Uploaded world '{world_name}' missing level.dat file")
+            if os.path.exists(world_path):
+                shutil.rmtree(world_path)
+            return jsonify({'success': False, 'message': 'Invalid world: missing level.dat file. Make sure your zip contains the world data at the root level.'}), 400
         
         # Automatically set this as the active world
         properties_path = os.path.join(MC_DIR, 'server.properties')
