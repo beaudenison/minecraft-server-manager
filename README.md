@@ -125,7 +125,7 @@ minecraft-server-manager/
 - `WEB_PORT`: Web panel port (default: 8080)
 - `MC_MEMORY`: Server memory allocation (default: 2G)
 - `ADMIN_PASSWORD`: Admin panel password (default: changeme) - **Change this!**
-- `SECRET_KEY`: Flask session secret key (auto-generated if not set)
+- `SECRET_KEY`: Flask session secret key (strongly recommended for production) - if not set, uses a development default
 
 ### Changing the Admin Password
 
@@ -142,6 +142,7 @@ Edit `docker-compose.yml` and change the `ADMIN_PASSWORD` variable:
 environment:
   - MC_MEMORY=2G
   - ADMIN_PASSWORD=your_secure_password_here
+  - SECRET_KEY=your_random_secret_key_here  # Generate with: python3 -c "import os; print(os.urandom(32).hex())"
 ```
 
 Then restart:

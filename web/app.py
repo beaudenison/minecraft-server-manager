@@ -20,7 +20,8 @@ import psutil
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max upload
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(32).hex())
+# Use a persistent secret key - in production this should be set via environment variable
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production-use-env-var'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
@@ -228,7 +229,8 @@ def get_server_health():
         try:
             process = psutil.Process(mc_process.pid)
             health['pid'] = mc_process.pid
-            health['cpu_percent'] = process.cpu_percent(interval=0.1)
+            # Use non-blocking CPU measurement to avoid delays
+            health['cpu_percent'] = process.cpu_percent(interval=None)
             health['memory_mb'] = process.memory_info().rss / (1024 * 1024)
             health['uptime_seconds'] = int(time.time() - process.create_time())
         except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
