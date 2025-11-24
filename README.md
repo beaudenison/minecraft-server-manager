@@ -29,7 +29,7 @@ A Docker-based Minecraft server management solution with a web admin panel for e
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/minecraft-server-manager.git
+git clone https://github.com/beaudenison/minecraft-server-manager.git
 cd minecraft-server-manager
 ```
 
