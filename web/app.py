@@ -771,27 +771,30 @@ def api_upload_world():
                 shutil.move(temp_extract_path, world_path)
                 logger.info(f"Extracted world with multiple root items")
             
+            # Verify the world has necessary files
+            if not os.path.exists(os.path.join(world_path, 'level.dat')):
+                logger.error(f"Uploaded world '{world_name}' missing level.dat file")
+                if os.path.exists(world_path):
+                    shutil.rmtree(world_path)
+                return jsonify({'success': False, 'message': 'Invalid world: missing level.dat file. Make sure your zip contains the world data at the root level.'}), 400
+            
             # Clean up
             if os.path.exists(temp_extract_path):
                 shutil.rmtree(temp_extract_path)
             os.remove(zip_path)
             
         except Exception as e:
-            # Clean up on error
+            # Log the error and clean up
+            logger.error(f"Error during world upload extraction: {e}", exc_info=True)
             if os.path.exists(temp_extract_path):
                 shutil.rmtree(temp_extract_path)
             if os.path.exists(zip_path):
                 os.remove(zip_path)
+            if os.path.exists(world_path):
+                shutil.rmtree(world_path)
             raise
         
         logger.info(f"World '{world_name}' uploaded by {session.get('username')}")
-        
-        # Verify the world has necessary files
-        if not os.path.exists(os.path.join(world_path, 'level.dat')):
-            logger.error(f"Uploaded world '{world_name}' missing level.dat file")
-            if os.path.exists(world_path):
-                shutil.rmtree(world_path)
-            return jsonify({'success': False, 'message': 'Invalid world: missing level.dat file. Make sure your zip contains the world data at the root level.'}), 400
         
         # Automatically set this as the active world
         properties_path = os.path.join(MC_DIR, 'server.properties')
