@@ -79,8 +79,10 @@ The console tab displays real-time server health metrics:
 ### Uploading Worlds
 1. Navigate to the "Worlds" section
 2. Upload a zipped world folder
-3. Select the world to use
-4. Restart the server
+3. The world is automatically set as active and will be used on next server start
+4. If the server is running, it will be restarted automatically to use the new world
+
+**Note**: Worlds are extracted directly to `/minecraft/[worldname]`. Your zip file should contain the world data (level.dat, region folder, etc.) at its root level.
 
 ### Version Upgrades
 1. Download the new server JAR from minecraft.net or your preferred source

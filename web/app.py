@@ -327,12 +327,17 @@ def stop_minecraft_server():
             mc_process.kill()
             mc_process.wait()
         
+        # Reset process variable to None after stopping
+        mc_process = None
+        
         with console_lock:
             console_output.append(f"[{datetime.now().strftime('%H:%M:%S')}] Server stopped")
         
         return True, "Server stopped"
     except Exception as e:
         logger.error(f"Failed to stop server: {e}")
+        # Reset process variable even on error
+        mc_process = None
         return False, f"Failed to stop server: {str(e)}"
 
 @app.route('/')
@@ -479,12 +484,14 @@ def api_status():
         # Check if server.jar exists
         has_jar = os.path.exists(os.path.join(MC_DIR, 'server.jar'))
         
-        # Get world folders
+        # Get world folders - look for directories with level.dat (Minecraft worlds)
         worlds = []
-        worlds_dir = os.path.join(MC_DIR, 'worlds')
-        if os.path.exists(worlds_dir):
-            worlds = [d for d in os.listdir(worlds_dir) 
-                     if os.path.isdir(os.path.join(worlds_dir, d))]
+        if os.path.exists(MC_DIR):
+            for item in os.listdir(MC_DIR):
+                item_path = os.path.join(MC_DIR, item)
+                # Check if it's a directory and contains level.dat (Minecraft world indicator)
+                if os.path.isdir(item_path) and os.path.exists(os.path.join(item_path, 'level.dat')):
+                    worlds.append(item)
         
         # Check active world
         properties_path = os.path.join(MC_DIR, 'server.properties')
@@ -727,15 +734,15 @@ def api_upload_world():
         if not world_name:
             world_name = f"world_{int(time.time())}"
         
-        world_path = os.path.join(MC_DIR, 'worlds', world_name)
-        
-        # Create worlds directory if it doesn't exist
-        os.makedirs(os.path.join(MC_DIR, 'worlds'), exist_ok=True)
+        # World goes directly in MC_DIR, not in a subdirectory
+        world_path = os.path.join(MC_DIR, world_name)
         
         # Remove existing world with same name
         if os.path.exists(world_path):
-            shutil.rmtree(world_path)
-            logger.info(f"Removed existing world: {world_name}")
+            # Backup existing world before removing
+            backup_path = world_path + f'.backup.{int(time.time())}'
+            shutil.move(world_path, backup_path)
+            logger.info(f"Backed up existing world to: {backup_path}")
         
         # Extract zip
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
@@ -751,10 +758,35 @@ def api_upload_world():
         
         logger.info(f"World '{world_name}' uploaded by {session.get('username')}")
         
-        message = f'World "{world_name}" uploaded successfully'
+        # Automatically set this as the active world
+        properties_path = os.path.join(MC_DIR, 'server.properties')
+        if os.path.exists(properties_path):
+            lines = []
+            found = False
+            with open(properties_path, 'r') as f:
+                for line in f:
+                    if line.startswith('level-name='):
+                        lines.append(f'level-name={world_name}\n')
+                        found = True
+                    else:
+                        lines.append(line)
+            
+            if not found:
+                lines.append(f'level-name={world_name}\n')
+            
+            # Write back atomically
+            temp_path = properties_path + '.tmp'
+            with open(temp_path, 'w') as f:
+                f.writelines(lines)
+            os.replace(temp_path, properties_path)
+            logger.info(f"Set active world to '{world_name}'")
+        
+        message = f'World "{world_name}" uploaded successfully and set as active world'
         if was_running:
             start_minecraft_server()
-            message += ' and server restarted'
+            message += '. Server restarted'
+        else:
+            message += '. Start the server to use this world'
         
         return jsonify({'success': True, 'message': message})
     except zipfile.BadZipFile:
