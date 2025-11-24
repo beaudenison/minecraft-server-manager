@@ -3,6 +3,7 @@ let consoleUpdateInterval;
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     updateStatus();
+    updateHealth();
     loadProperties();
     loadWorlds();
     loadCurrentUsername();
@@ -11,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(() => {
         if (document.getElementById('console-tab').classList.contains('active')) {
             updateConsole();
+            updateHealth();
         }
     }, 2000);
     
@@ -74,8 +76,56 @@ function switchTab(tabName) {
         loadWorlds();
     } else if (tabName === 'console') {
         updateConsole();
+        updateHealth();
     } else if (tabName === 'users') {
         loadUsers();
+    } else if (tabName === 'backups') {
+        loadBackups();
+    }
+}
+
+async function updateHealth() {
+    try {
+        const response = await fetch('/api/health');
+        if (await handleApiError(response)) return;
+        
+        const data = await response.json();
+        
+        if (data.success && data.health) {
+            const health = data.health;
+            
+            // Update health display
+            document.getElementById('cpu-usage').textContent = health.cpu_percent.toFixed(1) + '%';
+            document.getElementById('memory-usage').textContent = Math.round(health.memory_mb) + ' MB';
+            
+            // Format uptime
+            const uptime = health.uptime_seconds;
+            let uptimeStr = '0s';
+            if (uptime > 0) {
+                const hours = Math.floor(uptime / 3600);
+                const minutes = Math.floor((uptime % 3600) / 60);
+                const seconds = uptime % 60;
+                
+                if (hours > 0) {
+                    uptimeStr = `${hours}h ${minutes}m`;
+                } else if (minutes > 0) {
+                    uptimeStr = `${minutes}m ${seconds}s`;
+                } else {
+                    uptimeStr = `${seconds}s`;
+                }
+            }
+            document.getElementById('uptime').textContent = uptimeStr;
+            
+            // Show/hide health bar based on server status
+            const healthBar = document.getElementById('server-health');
+            if (health.status === 'running') {
+                healthBar.style.display = 'flex';
+            } else {
+                healthBar.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Failed to update health:', error);
     }
 }
 
@@ -372,6 +422,63 @@ function showNotification(message, type) {
     setTimeout(() => {
         notification.style.display = 'none';
     }, 4000);
+}
+
+// Backup Functions
+async function createBackup() {
+    const statusDiv = document.getElementById('backup-status');
+    statusDiv.textContent = 'Creating backup...';
+    statusDiv.className = 'upload-status';
+    statusDiv.style.display = 'block';
+    
+    try {
+        const response = await fetch('/api/backup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+        
+        if (await handleApiError(response)) return;
+        const data = await response.json();
+        
+        statusDiv.textContent = data.message;
+        statusDiv.className = data.success ? 'upload-status success' : 'upload-status error';
+        
+        if (data.success) {
+            showNotification(data.message, 'success');
+            loadBackups();
+        }
+    } catch (error) {
+        statusDiv.textContent = 'Failed to create backup';
+        statusDiv.className = 'upload-status error';
+    }
+}
+
+async function loadBackups() {
+    try {
+        const response = await fetch('/api/backups');
+        if (await handleApiError(response)) return;
+        const data = await response.json();
+        
+        const backupsList = document.getElementById('backups-list');
+        
+        if (!data.success || !data.backups || data.backups.length === 0) {
+            backupsList.innerHTML = '<p>No backups found</p>';
+            return;
+        }
+        
+        backupsList.innerHTML = data.backups.map(backup => `
+            <div class="backup-item">
+                <div class="backup-info">
+                    <strong>${backup.name}</strong>
+                    <small>Size: ${backup.size_mb} MB | Created: ${backup.created}</small>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load backups:', error);
+        document.getElementById('backups-list').innerHTML = '<p>Error loading backups</p>';
+    }
 }
 
 // User Management Functions

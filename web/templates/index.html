@@ -31,11 +31,26 @@
             <button class="tab-btn active" onclick="switchTab('console')">📟 Console</button>
             <button class="tab-btn" onclick="switchTab('files')">📦 Server Files</button>
             <button class="tab-btn" onclick="switchTab('worlds')">🗺️ Worlds</button>
+            <button class="tab-btn" onclick="switchTab('backups')">💾 Backups</button>
             <button class="tab-btn" onclick="switchTab('config')">⚙️ Configuration</button>
             <button class="tab-btn" onclick="switchTab('users')">👥 Users</button>
         </div>
 
         <div id="console-tab" class="tab-content active">
+            <div class="server-health" id="server-health">
+                <div class="health-item">
+                    <span class="health-label">CPU:</span>
+                    <span id="cpu-usage">0%</span>
+                </div>
+                <div class="health-item">
+                    <span class="health-label">Memory:</span>
+                    <span id="memory-usage">0 MB</span>
+                </div>
+                <div class="health-item">
+                    <span class="health-label">Uptime:</span>
+                    <span id="uptime">0s</span>
+                </div>
+            </div>
             <div class="console-container">
                 <div id="console-output" class="console-output">Waiting for server output...</div>
             </div>
@@ -68,6 +83,22 @@
                 <h2>Available Worlds</h2>
                 <div id="worlds-list">
                     <p>Loading worlds...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="backups-tab" class="tab-content">
+            <div class="card">
+                <h2>💾 Create Backup</h2>
+                <p>Create a backup of the current active world. Old backups are automatically removed (keeping last 10).</p>
+                <button class="btn btn-success" onclick="createBackup()">🔄 Create Backup Now</button>
+                <div id="backup-status" class="upload-status"></div>
+            </div>
+
+            <div class="card">
+                <h2>Available Backups</h2>
+                <div id="backups-list">
+                    <p>Loading backups...</p>
                 </div>
             </div>
         </div>

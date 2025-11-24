@@ -10,10 +10,13 @@ A Docker-based Minecraft server management solution with a web admin panel for e
 - 🎮 Full Minecraft server management via web interface
 - 📦 Easy version upgrades by uploading server JAR files
 - 🗺️ World upload and management
+- 💾 Automatic backup system with rotation
 - 🔧 Real-time server console
+- 📊 Server health monitoring (CPU, memory, uptime)
 - ⚙️ Server configuration management
-- 📊 Server status monitoring
 - 🔄 Start/Stop/Restart controls
+- 🛡️ Rate limiting and security features
+- 📝 Comprehensive logging
 - 🎨 Modern Discord-inspired dark theme UI
 
 ## Quick Start
@@ -61,6 +64,18 @@ docker-compose up -d
 
 All user data is stored in `/minecraft/users.json` and persists across container restarts.
 
+### Server Monitoring
+The console tab displays real-time server health metrics:
+- **CPU Usage**: Current CPU utilization percentage
+- **Memory Usage**: RAM consumption in MB
+- **Uptime**: How long the server has been running
+
+### Backup Management
+1. Navigate to the **Backups** tab
+2. Click "Create Backup Now" to create a backup of the active world
+3. Backups are automatically rotated (last 10 are kept)
+4. View backup size and creation time
+
 ### Uploading Worlds
 1. Navigate to the "Worlds" section
 2. Upload a zipped world folder
@@ -71,6 +86,15 @@ All user data is stored in `/minecraft/users.json` and persists across container
 1. Download the new server JAR from minecraft.net or your preferred source
 2. Upload via the "Server JAR" section
 3. Restart the server
+
+## Security Features
+
+- **Rate Limiting**: Prevents API abuse with configurable limits
+- **Session Security**: HTTP-only cookies with secure flags
+- **Input Validation**: All user inputs are sanitized
+- **File Upload Security**: Size limits and content validation
+- **Automatic Backups**: Protect your worlds from data loss
+- **Comprehensive Logging**: Track all server activities
 
 ## Directory Structure
 
@@ -131,14 +155,52 @@ Note: Environment variable only affects the initial setup. Once users are create
 ## Volumes
 
 - `./data`: Persistent storage for Minecraft server files
-- `./backups`: Automatic world backups
+- `./backups`: Automatic world backups (last 10 retained)
+
+## Logs
+
+Application logs are stored in `/minecraft/logs/manager.log` and include:
+- User authentication events
+- Server start/stop operations
+- Backup creation
+- File uploads
+- Error messages
 
 ## Security Notes
 
 - Change the default admin password immediately
 - Use a reverse proxy (nginx/traefik) with SSL for production
 - Restrict web panel access using firewall rules
-- Regular backups are recommended
+- Regular backups are created automatically
+- Rate limiting is enabled to prevent API abuse
+- All file uploads are validated for security
+
+## Performance Improvements
+
+This version includes several performance enhancements:
+- Efficient console output buffering
+- Optimized file operations with atomic writes
+- Smart health monitoring
+- Reduced polling overhead
+- Proper process cleanup on shutdown
+
+## Troubleshooting
+
+### Server won't start
+- Check logs in `/minecraft/logs/manager.log`
+- Ensure server.jar is uploaded
+- Verify Java version compatibility (requires Java 21)
+- Check memory allocation (default 2G)
+
+### High memory usage
+- Adjust MC_MEMORY environment variable in docker-compose.yml
+- Check for memory leaks in console output
+- Monitor health metrics in the web panel
+
+### Backup failures
+- Ensure adequate disk space in ./backups directory
+- Check file permissions
+- Review logs for specific error messages
 
 ## Contributing
 
